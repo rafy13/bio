@@ -2,7 +2,7 @@
 
 A modern, attractive, and creative personal portfolio website built with React. Showcasing professional experience, technical skills, projects, and achievements.
 
-## 🚀 Features
+## Features
 
 - **Modern Design**: Sharp, attractive UI with creative touches
 - **Responsive Layout**: Fully responsive design that works on all devices
@@ -11,14 +11,14 @@ A modern, attractive, and creative personal portfolio website built with React. 
 - **Dark Theme**: Professional dark theme with gradient accents
 - **Performance Optimized**: Fast loading and smooth scrolling
 
-## 🛠️ Technologies Used
+## Technologies Used
 
 - React 18
 - CSS3 (Custom animations and gradients)
 - React Icons
 - Modern ES6+ JavaScript
 
-## 📋 Prerequisites
+## Prerequisites
 
 Before installing, ensure you have the following installed on your system:
 
@@ -28,9 +28,9 @@ Before installing, ensure you have the following installed on your system:
 
 ---
 
-## 💻 Installation Guide
+## Installation Guide
 
-### 🪟 Windows Installation
+### Windows Installation
 
 #### Step 1: Install Node.js
 
@@ -113,7 +113,7 @@ The application will automatically open in your default browser at `http://local
 
 ---
 
-### 🐧 Ubuntu Installation
+### Ubuntu Installation
 
 #### Step 1: Update System Packages
 
@@ -210,7 +210,7 @@ The application will automatically open in your default browser at `http://local
 
 ---
 
-## ✅ Verification
+## Verification
 
 After installation, verify everything is working:
 
@@ -237,7 +237,7 @@ After installation, verify everything is working:
 
 ---
 
-## 🏗️ Build for Production
+## Build for Production
 
 To create an optimized production build:
 
@@ -257,7 +257,7 @@ This creates a `build` folder with optimized production files ready to deploy.
 
 ---
 
-## 📁 Project Structure
+## Project Structure
 
 ```
 bio/
@@ -284,7 +284,7 @@ bio/
 
 ---
 
-## 🎨 Sections
+## Sections
 
 1. **Rabby**: Introduction with animated code window
 2. **Skills**: Technical skills organized by category
@@ -295,7 +295,7 @@ bio/
 
 ---
 
-## 🐳 Docker Deployment
+## Docker Deployment
 
 This project includes Docker support for easy containerized deployment.
 
@@ -586,7 +586,606 @@ docker rmi $(docker images -q)
 
 ---
 
-## 🚀 Deployment (Other Platforms)
+## AWS EC2 Deployment Guide
+
+Deploy your portfolio to AWS EC2 t3.micro instance using Docker Hub.
+
+### Prerequisites
+
+- AWS Account
+- SSH key pair (.pem file)
+- Docker image pushed to Docker Hub
+
+### Step 1: Launch EC2 Instance
+
+1. Go to **AWS Console** → **EC2** → **Launch Instance**
+2. Configure:
+   - **Name**: `rabby-portfolio-server`
+   - **AMI**: Amazon Linux 2023 (Recommended - lightweight & AWS-optimized)
+   - **Instance Type**: t3.micro (1 vCPU, 1GB RAM - Free tier eligible)
+   - **Key Pair**: Create or select existing (download .pem file)
+   - **Security Group**:
+     - SSH (22) - Your IP only
+     - HTTP (80) - 0.0.0.0/0
+     - HTTPS (443) - 0.0.0.0/0 (optional)
+   - **Storage**: 8GB gp3 (default)
+3. Click **Launch Instance**
+4. Note your **Public IP address**
+
+### Step 2: Connect to EC2 Instance
+
+```bash
+# Set correct permissions for your key
+chmod 400 /path/to/your-key.pem
+
+# Connect via SSH (note: user is 'ec2-user' for Amazon Linux)
+ssh -i your-key.pem ec2-user@YOUR_EC2_IP
+```
+
+### Step 3: Install and Configure Docker
+
+```bash
+# Update system
+sudo dnf update -y
+
+# Install Docker
+sudo dnf install -y docker
+sudo systemctl start docker
+sudo systemctl enable docker
+
+# Add user to docker group
+sudo usermod -aG docker ec2-user
+
+# Apply group changes
+newgrp docker
+
+# Verify Docker
+docker --version
+```
+
+### Step 4: Deploy Application
+
+```bash
+# Pull and run your image
+docker pull YOUR_DOCKERHUB_USERNAME/rabby-portfolio:latest
+docker run -d -p 80:80 --name rabby-portfolio-app --restart unless-stopped YOUR_DOCKERHUB_USERNAME/rabby-portfolio:latest
+
+# Check status
+docker ps
+```
+
+### Step 5: Access Your Application
+
+Open your browser and navigate to:
+```
+http://YOUR_EC2_PUBLIC_IP
+```
+
+Your portfolio is now live!
+
+### Updating Your Deployment
+
+**For HTTP-only deployment:**
+
+```bash
+# SSH into your server
+ssh -i your-key.pem ec2-user@YOUR_EC2_IP
+
+# Pull latest image
+docker pull YOUR_DOCKERHUB_USERNAME/rabby-portfolio:latest
+
+# Stop and remove old container
+docker stop rabby-portfolio-app
+docker rm rabby-portfolio-app
+
+# Run new container
+docker run -d -p 80:80 --name rabby-portfolio-app --restart unless-stopped YOUR_DOCKERHUB_USERNAME/rabby-portfolio:latest
+
+# Clean up old images
+docker image prune -f
+```
+
+**For HTTPS-enabled deployment (with SSL certificates):**
+
+```bash
+# SSH into your server
+ssh -i your-key.pem ec2-user@YOUR_EC2_IP
+
+# Pull latest image
+docker pull YOUR_DOCKERHUB_USERNAME/rabby-portfolio:latest
+
+# Stop and remove old container
+docker stop rabby-portfolio-app
+docker rm rabby-portfolio-app
+
+# Run new container with SSL configuration
+docker run -d \
+  -p 80:80 \
+  -p 443:443 \
+  --name rabby-portfolio-app \
+  --restart unless-stopped \
+  -v ~/nginx-ssl/nginx-ssl.conf:/etc/nginx/conf.d/default.conf:ro \
+  -v /etc/letsencrypt:/etc/letsencrypt:ro \
+  YOUR_DOCKERHUB_USERNAME/rabby-portfolio:latest
+
+# Clean up old images
+docker image prune -f
+```
+
+### Optional: Create Update Script
+
+Create a simple update script for easy deployments:
+
+**For HTTP-only:**
+
+```bash
+# Create script
+nano ~/update-portfolio.sh
+```
+
+Add this content:
+
+```bash
+#!/bin/bash
+echo "Updating portfolio..."
+docker pull YOUR_DOCKERHUB_USERNAME/rabby-portfolio:latest
+docker stop rabby-portfolio-app
+docker rm rabby-portfolio-app
+docker run -d -p 80:80 --name rabby-portfolio-app --restart unless-stopped YOUR_DOCKERHUB_USERNAME/rabby-portfolio:latest
+docker image prune -f
+echo "Portfolio updated successfully!"
+```
+
+**For HTTPS-enabled:**
+
+```bash
+# Create script
+nano ~/update-portfolio-ssl.sh
+```
+
+Add this content:
+
+```bash
+#!/bin/bash
+echo "Updating portfolio with SSL..."
+docker pull YOUR_DOCKERHUB_USERNAME/rabby-portfolio:latest
+docker stop rabby-portfolio-app
+docker rm rabby-portfolio-app
+docker run -d \
+  -p 80:80 \
+  -p 443:443 \
+  --name rabby-portfolio-app \
+  --restart unless-stopped \
+  -v ~/nginx-ssl/nginx-ssl.conf:/etc/nginx/conf.d/default.conf:ro \
+  -v /etc/letsencrypt:/etc/letsencrypt:ro \
+  YOUR_DOCKERHUB_USERNAME/rabby-portfolio:latest
+docker image prune -f
+echo "Portfolio updated successfully with SSL!"
+```
+
+Make it executable:
+
+```bash
+chmod +x ~/update-portfolio.sh
+# or for SSL version
+chmod +x ~/update-portfolio-ssl.sh
+```
+
+Now update anytime with:
+
+```bash
+./update-portfolio.sh
+# or for SSL version
+./update-portfolio-ssl.sh
+```
+
+### Setting Up Domain Name with Route 53 Hosted Zone
+
+If you have a Route 53 hosted zone in AWS:
+
+#### Step 1: Add A Record in Route 53
+
+1. Go to **AWS Console** → **Route 53** → **Hosted Zones**
+2. Click on your hosted zone (e.g., `yourdomain.com`)
+3. Click **Create Record**
+4. Configure the record:
+   - **Record name**: Leave empty for root domain (@) or enter subdomain (e.g., `portfolio`)
+   - **Record type**: A - Routes traffic to an IPv4 address
+   - **Value**: Enter your EC2 Public IP address
+   - **TTL**: 300 seconds (5 minutes)
+   - **Routing policy**: Simple routing
+5. Click **Create records**
+
+#### Step 2: Create WWW Subdomain (Optional)
+
+To handle `www.yourdomain.com`:
+
+**Option A: Another A Record**
+1. Click **Create Record**
+2. **Record name**: `www`
+3. **Record type**: A
+4. **Value**: Your EC2 Public IP
+5. Click **Create records**
+
+**Option B: CNAME to root domain** (preferred)
+1. Click **Create Record**
+2. **Record name**: `www`
+3. **Record type**: CNAME
+4. **Value**: `yourdomain.com`
+5. Click **Create records**
+
+#### Step 3: Verify DNS Propagation
+
+```bash
+# Check if DNS is working (from your local machine)
+nslookup yourdomain.com
+dig yourdomain.com
+
+# Or use online tools
+# https://dnschecker.org
+```
+
+DNS propagation typically takes 5-30 minutes but can take up to 48 hours.
+
+Once propagated, access your site via:
+```
+http://yourdomain.com
+```
+
+---
+
+## Enable HTTPS with SSL/TLS Certificate
+
+Secure your application with free SSL certificates from Let's Encrypt.
+
+### Prerequisites
+
+- Domain name configured and pointing to your EC2 instance
+- DNS fully propagated (verify with `nslookup yourdomain.com`)
+- Security Group allows HTTPS (port 443)
+
+### Method 1: Using Certbot with Nginx (Recommended)
+
+This method uses Certbot to automatically obtain and configure SSL certificates.
+
+#### Step 1: Update Security Group
+
+Ensure your EC2 Security Group allows HTTPS:
+
+1. Go to **EC2** → **Security Groups**
+2. Select your instance's security group
+3. Add inbound rule:
+   - **Type**: HTTPS
+   - **Port**: 443
+   - **Source**: 0.0.0.0/0 (Anywhere IPv4)
+4. Save rules
+
+#### Step 2: Stop Docker Container Temporarily
+
+```bash
+# SSH into your EC2 instance
+ssh -i your-key.pem ec2-user@YOUR_EC2_IP
+
+# Stop the container to free port 80 (required for Certbot validation)
+docker stop rabby-portfolio-app
+```
+
+#### Step 3: Install Certbot
+
+```bash
+# Install Certbot for Amazon Linux 2023
+sudo dnf install -y certbot python3-certbot-nginx
+
+# Or for Ubuntu (if using Ubuntu AMI)
+# sudo apt update
+# sudo apt install -y certbot python3-certbot-nginx
+```
+
+#### Step 4: Obtain SSL Certificate
+
+```bash
+# Get certificate for your domain(s)
+sudo certbot certonly --standalone -d yourdomain.com -d www.yourdomain.com
+
+# Follow the prompts:
+# - Enter your email address
+# - Agree to terms of service
+# - Choose whether to share email with EFF (optional)
+```
+
+The certificates will be saved in:
+- Certificate: `/etc/letsencrypt/live/yourdomain.com/fullchain.pem`
+- Private Key: `/etc/letsencrypt/live/yourdomain.com/privkey.pem`
+
+#### Step 5: Create SSL-Enabled Nginx Configuration
+
+Create a new nginx configuration file on your EC2 instance:
+
+```bash
+# Create nginx config directory in home
+mkdir -p ~/nginx-ssl
+
+# Create the SSL-enabled nginx config
+nano ~/nginx-ssl/nginx-ssl.conf
+```
+
+Add this configuration:
+
+```nginx
+server {
+    listen 80;
+    server_name yourdomain.com www.yourdomain.com;
+    
+    # Redirect HTTP to HTTPS
+    return 301 https://$server_name$request_uri;
+}
+
+server {
+    listen 443 ssl http2;
+    server_name yourdomain.com www.yourdomain.com;
+    
+    # SSL Certificate files
+    ssl_certificate /etc/letsencrypt/live/yourdomain.com/fullchain.pem;
+    ssl_certificate_key /etc/letsencrypt/live/yourdomain.com/privkey.pem;
+    
+    # SSL Configuration
+    ssl_protocols TLSv1.2 TLSv1.3;
+    ssl_ciphers HIGH:!aNULL:!MD5;
+    ssl_prefer_server_ciphers on;
+    ssl_session_cache shared:SSL:10m;
+    ssl_session_timeout 10m;
+    
+    # Security headers
+    add_header Strict-Transport-Security "max-age=31536000; includeSubDomains" always;
+    add_header X-Frame-Options "SAMEORIGIN" always;
+    add_header X-Content-Type-Options "nosniff" always;
+    add_header X-XSS-Protection "1; mode=block" always;
+    
+    # Root directory
+    root /usr/share/nginx/html;
+    index index.html;
+    
+    # Gzip compression
+    gzip on;
+    gzip_vary on;
+    gzip_min_length 1000;
+    gzip_types text/plain text/css application/json application/javascript text/xml application/xml application/xml+rss text/javascript;
+    
+    # Handle React Router
+    location / {
+        try_files $uri $uri/ /index.html;
+    }
+    
+    # Cache static assets
+    location ~* \.(jpg|jpeg|png|gif|ico|css|js|svg|woff|woff2|ttf|eot)$ {
+        expires 1y;
+        add_header Cache-Control "public, immutable";
+    }
+}
+```
+
+**Important**: Replace `yourdomain.com` with your actual domain name.
+
+#### Step 6: Run Docker Container with SSL
+
+```bash
+# Run container with SSL certificate volumes mounted
+docker run -d \
+  -p 80:80 \
+  -p 443:443 \
+  --name rabby-portfolio-app \
+  --restart unless-stopped \
+  -v ~/nginx-ssl/nginx-ssl.conf:/etc/nginx/conf.d/default.conf:ro \
+  -v /etc/letsencrypt:/etc/letsencrypt:ro \
+  YOUR_DOCKERHUB_USERNAME/rabby-portfolio:latest
+
+# Verify container is running
+docker ps
+
+# Check logs
+docker logs rabby-portfolio-app
+```
+
+#### Step 7: Test Your HTTPS Connection
+
+```bash
+# Test from command line
+curl -I https://yourdomain.com
+
+# Or open in browser
+# https://yourdomain.com
+```
+
+Your site should now be accessible via HTTPS!
+
+#### Step 8: Auto-Renewal Setup
+
+SSL certificates expire after 90 days. Set up automatic renewal:
+
+```bash
+# Test renewal process (dry run)
+sudo certbot renew --dry-run
+
+# Create renewal script
+sudo nano /usr/local/bin/renew-cert.sh
+```
+
+Add this content:
+
+```bash
+#!/bin/bash
+# Stop container
+docker stop rabby-portfolio-app
+
+# Renew certificate
+certbot renew --standalone
+
+# Restart container
+docker start rabby-portfolio-app
+
+echo "Certificate renewed successfully!"
+```
+
+Make it executable:
+
+```bash
+sudo chmod +x /usr/local/bin/renew-cert.sh
+```
+
+Add to crontab for automatic renewal (runs twice daily):
+
+```bash
+# Edit crontab
+sudo crontab -e
+
+# Add this line (runs at 2am and 2pm daily)
+0 2,14 * * * /usr/local/bin/renew-cert.sh
+```
+
+---
+
+### Method 2: Using AWS Certificate Manager with Application Load Balancer
+
+For production environments with higher traffic, consider using AWS Certificate Manager (ACM) with an Application Load Balancer:
+
+#### Advantages:
+- Free SSL certificates managed by AWS
+- Automatic renewal (no manual intervention)
+- Better scalability and load balancing
+- Health checks and auto-scaling support
+
+#### High-Level Steps:
+
+1. **Request Certificate in ACM**:
+   - Go to **AWS Certificate Manager** → **Request Certificate**
+   - Enter your domain name (e.g., `yourdomain.com`, `*.yourdomain.com`)
+   - Choose DNS validation
+   - Add CNAME records to Route 53 (automatic if hosted zone is in same account)
+
+2. **Create Application Load Balancer**:
+   - Go to **EC2** → **Load Balancers** → **Create Load Balancer**
+   - Choose **Application Load Balancer**
+   - Add listener for HTTPS (port 443)
+   - Select your ACM certificate
+   - Create target group pointing to your EC2 instance (port 80)
+
+3. **Update Route 53**:
+   - Change A record to **Alias** record
+   - Point to your Application Load Balancer
+
+4. **Update Docker Command**:
+   ```bash
+   # No need for HTTPS on container, ALB handles it
+   docker run -d -p 80:80 --name rabby-portfolio-app --restart unless-stopped YOUR_DOCKERHUB_USERNAME/rabby-portfolio:latest
+   ```
+
+**Note**: Application Load Balancer costs approximately $16-20/month, which may not be cost-effective for a simple portfolio site on t3.micro free tier.
+
+---
+
+### Verification and Testing
+
+Test your SSL configuration:
+
+1. **SSL Labs Test**: https://www.ssllabs.com/ssltest/
+2. **Browser Check**: Look for padlock icon in address bar
+3. **Force HTTPS**: Ensure HTTP redirects to HTTPS
+4. **Certificate Info**: Click padlock → View certificate details
+
+### Troubleshooting HTTPS
+
+**Certificate not found error:**
+```bash
+# Check if certificates exist
+sudo ls -la /etc/letsencrypt/live/yourdomain.com/
+
+# Verify permissions
+sudo chmod 755 /etc/letsencrypt/live/
+sudo chmod 755 /etc/letsencrypt/archive/
+```
+
+**Port 443 not accessible:**
+```bash
+# Check if container is listening on 443
+docker port rabby-portfolio-app
+
+# Check Security Group allows port 443
+# Check if firewall is blocking
+sudo iptables -L -n | grep 443
+```
+
+**Certificate expired:**
+```bash
+# Manually renew
+sudo certbot renew
+
+# Restart container
+docker restart rabby-portfolio-app
+```
+
+**Nginx configuration error:**
+```bash
+# Test nginx config inside container
+docker exec rabby-portfolio-app nginx -t
+
+# View nginx error logs
+docker logs rabby-portfolio-app
+```
+
+---
+
+### Monitoring and Maintenance
+
+```bash
+# View container logs
+docker logs -f rabby-portfolio-app
+
+# Check container status
+docker ps
+
+# Check system resources
+free -h    # Memory usage
+df -h      # Disk usage
+
+# Restart container
+docker restart rabby-portfolio-app
+```
+
+### Cost Optimization
+
+- **t3.micro**: Free tier eligible (750 hours/month for 12 months)
+- **Storage**: 8GB is sufficient, only ~$0.80/month after free tier
+- **Data Transfer**: 15GB free outbound/month
+- **Stop when not needed**: Stops compute charges (storage charges continue)
+
+### Troubleshooting
+
+**Container not starting:**
+```bash
+docker logs rabby-portfolio-app
+```
+
+**Port 80 in use:**
+```bash
+sudo lsof -i :80
+# Or use different port
+docker run -d -p 8080:80 --name rabby-portfolio-app --restart unless-stopped YOUR_DOCKERHUB_USERNAME/rabby-portfolio:latest
+```
+
+**Cannot connect to EC2:**
+- Check Security Group allows HTTP (port 80) from 0.0.0.0/0
+- Check Security Group allows SSH (port 22) from your IP
+- Verify instance is running
+
+**Docker permission denied:**
+```bash
+sudo usermod -aG docker ec2-user
+newgrp docker
+```
+
+---
+
+## Deployment (Other Platforms)
 
 The website can also be deployed to various platforms:
 
@@ -598,7 +1197,7 @@ The website can also be deployed to various platforms:
 
 ---
 
-## 🐛 Troubleshooting
+## Troubleshooting
 
 ### Common Issues
 
@@ -672,7 +1271,7 @@ If you're using Node.js 20 or higher, you may encounter this error:
 SecurityError: Cannot initialize local storage without a `--localstorage-file` path
 ```
 
-**✅ Solution: Already Fixed in This Project**
+**Solution: Already Fixed in This Project**
 
 The project has been configured to handle this automatically:
 - A `scratch/` directory is created for localStorage storage
@@ -710,7 +1309,7 @@ NODE_OPTIONS=--localstorage-file=./scratch/localstorage.json npm start
 
 ---
 
-## 📝 Customization
+## Customization
 
 To customize the content, edit the respective component files in `src/components/`:
 
@@ -735,7 +1334,7 @@ Edit the CSS variables in `src/index.css`:
 
 ---
 
-## 📦 Available Scripts
+## Available Scripts
 
 - `npm start` - Runs the app in development mode
 - `npm run build` - Builds the app for production
@@ -744,7 +1343,7 @@ Edit the CSS variables in `src/index.css`:
 
 ---
 
-## 🔧 Development Tips
+## Development Tips
 
 ### Hot Reload
 The development server automatically reloads when you make changes to the code.
@@ -761,7 +1360,7 @@ npm install --save-dev prettier
 
 ---
 
-## 📧 Contact
+## Contact
 
 - **Email**: rafy.ruet@gmail.com
 - **Phone**: +8801521479231
@@ -770,13 +1369,13 @@ npm install --save-dev prettier
 
 ---
 
-## 📄 License
+## License
 
 This project is open source and available for personal use.
 
 ---
 
-## 🙏 Acknowledgments
+## Acknowledgments
 
 - Built with React and Create React App
 - Icons provided by React Icons
@@ -784,4 +1383,4 @@ This project is open source and available for personal use.
 
 ---
 
-Built with ❤️ using React
+Built with love using React
