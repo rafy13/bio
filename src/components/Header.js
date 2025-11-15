@@ -35,7 +35,7 @@ const Header = ({ activeSection }) => {
     <header className={`header ${isScrolled ? 'scrolled' : ''}`}>
       <div className="header-container">
         <div className="logo" onClick={() => scrollToSection('home')}>
-          <span className="logo-text">AKMR</span>
+          <span className="logo-text">Rabby</span>
         </div>
         
         <nav className={`nav ${isMobileMenuOpen ? 'open' : ''}`}>
