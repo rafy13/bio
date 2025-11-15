@@ -5,16 +5,14 @@ import { FaServer, FaDatabase, FaCode } from 'react-icons/fa';
 const Projects = () => {
   const sectionRef = useRef(null);
   const [expandedProject, setExpandedProject] = useState(null);
+  const [isVisible, setIsVisible] = useState(false);
 
   useEffect(() => {
     const observer = new IntersectionObserver(
       (entries) => {
         entries.forEach((entry) => {
           if (entry.isIntersecting) {
-            const cards = entry.target.querySelectorAll('.project-card');
-            cards.forEach((card) => {
-              card.classList.add('animate');
-            });
+            setIsVisible(true);
           }
         });
       },
@@ -93,7 +91,7 @@ const Projects = () => {
           {projects.map((project, index) => (
             <div 
               key={index}
-              className={`project-card ${expandedProject === index ? 'expanded' : ''}`}
+              className={`project-card ${isVisible ? 'animate' : ''} ${expandedProject === index ? 'expanded' : ''}`}
               style={{ animationDelay: `${index * 0.15}s` }}
               onClick={() => setExpandedProject(expandedProject === index ? null : index)}
             >
