@@ -295,9 +295,300 @@ bio/
 
 ---
 
-## 🚀 Deployment
+## 🐳 Docker Deployment
 
-The website can be deployed to various platforms:
+This project includes Docker support for easy containerized deployment.
+
+### Prerequisites
+
+- Docker installed on your system
+  - **Windows/Mac**: [Docker Desktop](https://www.docker.com/products/docker-desktop)
+  - **Ubuntu**: See installation instructions below
+
+### Installing Docker on Ubuntu
+
+```bash
+# Update package index
+sudo apt update
+
+# Install required packages
+sudo apt install apt-transport-https ca-certificates curl software-properties-common -y
+
+# Add Docker's official GPG key
+curl -fsSL https://download.docker.com/linux/ubuntu/gpg | sudo gpg --dearmor -o /usr/share/keyrings/docker-archive-keyring.gpg
+
+# Add Docker repository
+echo "deb [arch=$(dpkg --print-architecture) signed-by=/usr/share/keyrings/docker-archive-keyring.gpg] https://download.docker.com/linux/ubuntu $(lsb_release -cs) stable" | sudo tee /etc/apt/sources.list.d/docker.list > /dev/null
+
+# Install Docker
+sudo apt update
+sudo apt install docker-ce docker-ce-cli containerd.io -y
+
+# Add your user to the docker group (to run without sudo)
+sudo usermod -aG docker ${USER}
+
+# Apply the group changes (logout and login again, or run:)
+newgrp docker
+
+# Verify installation
+docker --version
+docker run hello-world
+```
+
+### Building the Docker Image
+
+Navigate to the project directory and build the image:
+
+```bash
+# Build the image with a tag
+docker build -t rabby-portfolio:latest .
+
+# Or with a specific version
+docker build -t rabby-portfolio:1.0.0 .
+```
+
+**Build Options:**
+
+```bash
+# Build without cache (force fresh build)
+docker build --no-cache -t rabby-portfolio:latest .
+
+# Build with custom build arguments
+docker build --build-arg NODE_VERSION=18 -t rabby-portfolio:latest .
+```
+
+### Running the Docker Container
+
+**Basic Run:**
+
+```bash
+# Run the container
+docker run -d -p 80:80 --name rabby-portfolio-app rabby-portfolio:latest
+```
+
+**Run with Custom Port:**
+
+```bash
+# Run on port 8080 instead of 80
+docker run -d -p 8080:80 --name rabby-portfolio-app rabby-portfolio:latest
+```
+
+**Run with Automatic Restart:**
+
+```bash
+# Container will restart automatically on system reboot
+docker run -d -p 80:80 --name rabby-portfolio-app --restart unless-stopped rabby-portfolio:latest
+```
+
+### Accessing the Application
+
+After running the container, access the application:
+
+- **Local**: `http://localhost` (or `http://localhost:8080` if using custom port)
+- **Network**: `http://YOUR_SERVER_IP` (replace with your server's IP address)
+
+### Docker Commands Reference
+
+**Container Management:**
+
+```bash
+# List running containers
+docker ps
+
+# List all containers (including stopped)
+docker ps -a
+
+# Stop the container
+docker stop rabby-portfolio-app
+
+# Start a stopped container
+docker start rabby-portfolio-app
+
+# Restart the container
+docker restart rabby-portfolio-app
+
+# Remove the container
+docker rm rabby-portfolio-app
+
+# Stop and remove in one command
+docker rm -f rabby-portfolio-app
+
+# View container logs
+docker logs rabby-portfolio-app
+
+# Follow container logs in real-time
+docker logs -f rabby-portfolio-app
+
+# Execute commands inside running container
+docker exec -it rabby-portfolio-app sh
+```
+
+**Image Management:**
+
+```bash
+# List all images
+docker images
+
+# Remove an image
+docker rmi rabby-portfolio:latest
+
+# Remove unused images
+docker image prune
+
+# Remove all unused images, containers, networks
+docker system prune -a
+```
+
+**Health Check:**
+
+```bash
+# Check container health status
+docker inspect --format='{{.State.Health.Status}}' rabby-portfolio-app
+
+# View health check logs
+docker inspect --format='{{json .State.Health}}' rabby-portfolio-app | jq
+```
+
+### Docker Compose (Optional)
+
+Create a `docker-compose.yml` file for easier management:
+
+```yaml
+version: '3.8'
+
+services:
+  portfolio:
+    build: .
+    container_name: rabby-portfolio-app
+    ports:
+      - "80:80"
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost/"]
+      interval: 30s
+      timeout: 3s
+      retries: 3
+      start_period: 5s
+```
+
+**Using Docker Compose:**
+
+```bash
+# Build and start
+docker-compose up -d
+
+# Stop
+docker-compose down
+
+# View logs
+docker-compose logs -f
+
+# Rebuild and restart
+docker-compose up -d --build
+```
+
+### Production Deployment
+
+**Deploy to Remote Server:**
+
+```bash
+# Save image to tar file
+docker save rabby-portfolio:latest | gzip > rabby-portfolio.tar.gz
+
+# Transfer to server (using scp)
+scp rabby-portfolio.tar.gz user@your-server:/path/to/destination/
+
+# On the server, load the image
+gunzip -c rabby-portfolio.tar.gz | docker load
+
+# Run the container on the server
+docker run -d -p 80:80 --name rabby-portfolio-app --restart unless-stopped rabby-portfolio:latest
+```
+
+**Using Docker Registry:**
+
+```bash
+# Tag image for registry
+docker tag rabby-portfolio:latest your-registry.com/rabby-portfolio:latest
+
+# Push to registry
+docker push your-registry.com/rabby-portfolio:latest
+
+# On server, pull and run
+docker pull your-registry.com/rabby-portfolio:latest
+docker run -d -p 80:80 --name rabby-portfolio-app --restart unless-stopped your-registry.com/rabby-portfolio:latest
+```
+
+### Nginx Configuration
+
+The Docker image includes a custom Nginx configuration (`nginx.conf`) that provides:
+
+- **Gzip compression** for faster loading
+- **Security headers** for enhanced security
+- **Static asset caching** for better performance
+- **React Router support** for client-side routing
+- **Custom error pages**
+
+To modify the Nginx configuration:
+
+1. Edit `nginx.conf` in the project root
+2. Uncomment the nginx.conf copy line in `Dockerfile`:
+   ```dockerfile
+   COPY nginx.conf /etc/nginx/conf.d/default.conf
+   ```
+3. Rebuild the Docker image
+
+### Troubleshooting Docker
+
+**Port Already in Use:**
+
+```bash
+# Find process using port 80
+sudo lsof -i :80
+# or
+sudo netstat -tulpn | grep :80
+
+# Stop the process or use a different port
+docker run -d -p 8080:80 --name rabby-portfolio-app rabby-portfolio:latest
+```
+
+**Permission Denied:**
+
+```bash
+# Add user to docker group
+sudo usermod -aG docker ${USER}
+newgrp docker
+
+# Or run with sudo
+sudo docker run -d -p 80:80 --name rabby-portfolio-app rabby-portfolio:latest
+```
+
+**Container Won't Start:**
+
+```bash
+# Check logs for errors
+docker logs rabby-portfolio-app
+
+# Check container details
+docker inspect rabby-portfolio-app
+```
+
+**Out of Disk Space:**
+
+```bash
+# Clean up unused resources
+docker system prune -a --volumes
+
+# Remove specific containers and images
+docker rm $(docker ps -a -q)
+docker rmi $(docker images -q)
+```
+
+---
+
+## 🚀 Deployment (Other Platforms)
+
+The website can also be deployed to various platforms:
 
 - **Netlify**: Drag and drop the `build` folder or connect your Git repository
 - **Vercel**: Connect your repository for automatic deployments
