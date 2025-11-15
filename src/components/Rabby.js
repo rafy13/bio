@@ -75,7 +75,13 @@ const Rabby = () => {
             <a href="#projects" className="btn btn-primary">
               View My Work
             </a>
-            <a href="#contact" className="btn btn-secondary">
+            <a 
+              href="/resume.pdf" 
+              className="btn btn-secondary"
+              download="AKM_Rabby_Resume.pdf"
+              target="_blank"
+              rel="noopener noreferrer"
+            >
               <FaDownload /> Download CV
             </a>
           </div>

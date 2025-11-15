@@ -1,10 +1,10 @@
 import React, { useEffect, useRef, useState } from 'react';
 import './Projects.css';
-import { FaServer, FaDatabase, FaCode } from 'react-icons/fa';
+import { FaServer, FaDatabase, FaCode, FaTimes } from 'react-icons/fa';
 
 const Projects = () => {
   const sectionRef = useRef(null);
-  const [expandedProject, setExpandedProject] = useState(null);
+  const [selectedProject, setSelectedProject] = useState(null);
   const [isVisible, setIsVisible] = useState(false);
 
   useEffect(() => {
@@ -25,6 +25,29 @@ const Projects = () => {
 
     return () => observer.disconnect();
   }, []);
+
+  // Prevent body scroll when modal is open
+  useEffect(() => {
+    if (selectedProject) {
+      document.body.style.overflow = 'hidden';
+    } else {
+      document.body.style.overflow = 'unset';
+    }
+    return () => {
+      document.body.style.overflow = 'unset';
+    };
+  }, [selectedProject]);
+
+  // Close modal on ESC key
+  useEffect(() => {
+    const handleEscape = (e) => {
+      if (e.key === 'Escape' && selectedProject) {
+        setSelectedProject(null);
+      }
+    };
+    document.addEventListener('keydown', handleEscape);
+    return () => document.removeEventListener('keydown', handleEscape);
+  }, [selectedProject]);
 
   const projects = [
     {
@@ -81,52 +104,75 @@ const Projects = () => {
   ];
 
   return (
-    <section id="projects" className="projects-section" ref={sectionRef}>
-      <div className="section-container">
-        <h2 className="section-title">Featured Projects</h2>
-        <p className="section-subtitle">
-          Real-world solutions that scale and deliver impact
-        </p>
-        <div className="projects-grid">
-          {projects.map((project, index) => (
-            <div 
-              key={index}
-              className={`project-card ${isVisible ? 'animate' : ''} ${expandedProject === index ? 'expanded' : ''}`}
-              style={{ animationDelay: `${index * 0.15}s` }}
-              onClick={() => setExpandedProject(expandedProject === index ? null : index)}
-            >
-              <div className="project-header">
-                <div className={`project-icon ${project.gradient}`}>
-                  {project.icon}
+    <>
+      <section id="projects" className="projects-section" ref={sectionRef}>
+        <div className="section-container">
+          <h2 className="section-title">Featured Projects</h2>
+          <p className="section-subtitle">
+            Real-world solutions that scale and deliver impact
+          </p>
+          <div className="projects-grid">
+            {projects.map((project, index) => (
+              <div 
+                key={index}
+                className={`project-card ${isVisible ? 'animate' : ''}`}
+                style={{ animationDelay: `${index * 0.15}s` }}
+                onClick={() => setSelectedProject(project)}
+              >
+                <div className="project-header">
+                  <div className={`project-icon ${project.gradient}`}>
+                    {project.icon}
+                  </div>
+                  <h3 className="project-title">{project.title}</h3>
                 </div>
-                <h3 className="project-title">{project.title}</h3>
-              </div>
-              <p className="project-description">{project.description}</p>
-              <div className="project-tech">
-                {project.tech.map((tech, techIndex) => (
-                  <span key={techIndex} className="tech-badge">{tech}</span>
-                ))}
-              </div>
-              {expandedProject === index && (
-                <div className="project-details">
-                  <h4 className="details-title">Key Achievements:</h4>
-                  <ul className="project-highlights">
-                    {project.highlights.map((highlight, hIndex) => (
-                      <li key={hIndex}>{highlight}</li>
-                    ))}
-                  </ul>
+                <p className="project-description">{project.description}</p>
+                <div className="project-tech">
+                  {project.tech.map((tech, techIndex) => (
+                    <span key={techIndex} className="tech-badge">{tech}</span>
+                  ))}
                 </div>
-              )}
-              <div className="project-footer">
-                <span className="expand-indicator">
-                  {expandedProject === index ? 'Click to collapse' : 'Click to expand'}
-                </span>
+                <div className="project-footer">
+                  <span className="expand-indicator">
+                    View details
+                  </span>
+                </div>
               </div>
-            </div>
-          ))}
+            ))}
+          </div>
         </div>
-      </div>
-    </section>
+      </section>
+
+      {/* Modal */}
+      {selectedProject && (
+        <div className="modal-overlay" onClick={() => setSelectedProject(null)}>
+          <div className="modal-content" onClick={(e) => e.stopPropagation()}>
+            <button className="modal-close" onClick={() => setSelectedProject(null)}>
+              <FaTimes />
+            </button>
+            <div className="modal-header">
+              <div className={`modal-icon ${selectedProject.gradient}`}>
+                {selectedProject.icon}
+              </div>
+              <h2 className="modal-title">{selectedProject.title}</h2>
+            </div>
+            <p className="modal-description">{selectedProject.description}</p>
+            <div className="modal-tech">
+              {selectedProject.tech.map((tech, techIndex) => (
+                <span key={techIndex} className="tech-badge">{tech}</span>
+              ))}
+            </div>
+            <div className="modal-details">
+              <h3 className="modal-section-title">Key Achievements</h3>
+              <ul className="modal-highlights">
+                {selectedProject.highlights.map((highlight, hIndex) => (
+                  <li key={hIndex}>{highlight}</li>
+                ))}
+              </ul>
+            </div>
+          </div>
+        </div>
+      )}
+    </>
   );
 };
 
